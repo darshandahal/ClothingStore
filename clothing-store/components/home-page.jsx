@@ -59,7 +59,7 @@ export default function HomePage() {
       </div>
 
       {/* ==== COMPANY INFO ==== */}
-      <Card className="border-blue-100 shadow-sm">
+      {/* <Card className="border-blue-100 shadow-sm">
         <CardHeader>
           <CardTitle className="text-xl font-semibold text-blue-800">Welcome to Babita Clothing Store बबिता क्लोथिङ स्टोरमा स्वागत छ</CardTitle>
         </CardHeader>
@@ -78,7 +78,7 @@ export default function HomePage() {
             We believe fashion should be fun, accessible, and empowering for everyone. <strong>वर्षभरि अचम्मका चाडपर्व छुटहरू र विशेष बिक्री कार्यक्रमहरूको मजा लिनुहोस्! हामी विश्वास गर्छौं कि फेसन सबैका लागि रमाइलो, सुलभ, र सशक्त बनाउने हुनुपर्छ।</strong>
           </p>
         </CardContent>
-      </Card>
+      </Card> */}
 
       {/* ==== STATS ==== */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
