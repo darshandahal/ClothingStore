@@ -11,30 +11,27 @@ export default function LoginPage() {
   const [email, setEmail] = useState(""); 
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const router = useRouter();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError("");
 
     try {
-      // Add your authentication logic here
-      // Example with Supabase:
-      // const { data, error } = await supabase.auth.signInWithPassword({
-      //   email,
-      //   password,
-      // });
-      // if (error) throw error;
-
-      // For now, simulate login
-      console.log("Login attempt with:", email);
-      
-      // Redirect to dashboard on success
-      // router.push("/dashboard");
+      // Hardcoded credentials
+      if (email === "babitakhadka@gmail.com" && password === "darshan10") {
+        console.log("Login successful!");
+        // Redirect to dashboard
+        router.push("/home");
+      } else {
+        setError("Invalid email or password");
+      }
       
     } catch (err) {
       console.error("Login error:", err);
-      alert(err.message ?? "Login failed");
+      setError(err.message ?? "Login failed");
     } finally {
       setLoading(false);
     }
@@ -99,6 +96,12 @@ export default function LoginPage() {
               />
             </div>
 
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm">
+                {error}
+              </div>
+            )}
+
             <div className="flex items-center justify-between text-sm">
               <label className="flex items-center text-gray-600">
                 <input 
@@ -119,6 +122,12 @@ export default function LoginPage() {
             >
               {loading ? "Signing in..." : "Login"}
             </Button>
+
+            <div className="text-xs bg-blue-50 p-3 rounded text-gray-600">
+              <p className="font-semibold mb-1">Demo Credentials:</p>
+              <p>Email: babitakhadka@gmail.com</p>
+              <p>Password: darshan10</p>
+            </div>
           </form>
 
           <p className="text-sm text-gray-600 text-center mt-6">
