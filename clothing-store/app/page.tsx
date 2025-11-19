@@ -4,12 +4,17 @@
 //   return <OnlinePage />
 // }
 
+import InstorePage from "@/components/instore-overview"
 
-import HomePage from "@/components/home-page"
-
-export default function Home() {
-  return <HomePage />
+export default function Instore() {
+  return <InstorePage />
 }
+
+// import HomePage from "@/components/home-page"
+
+// export default function Home() {
+//   return <HomePage />
+// }
 
 // import MarketingPage from "@/components/marketing"
 
