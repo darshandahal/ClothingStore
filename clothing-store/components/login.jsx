@@ -21,7 +21,7 @@ export default function LoginPage() {
 
     try {
       // Hardcoded credentials
-      if (email === "babitakhadka@gmail.com" && password === "darshan10") {
+      if (email === "babitakhadka@gmail.com" && password === "babita10") {
         console.log("Login successful!");
         // Redirect to dashboard
         router.push("/home");
@@ -126,7 +126,7 @@ export default function LoginPage() {
             <div className="text-xs bg-blue-50 p-3 rounded text-gray-600">
               <p className="font-semibold mb-1">Demo Credentials:</p>
               <p>Email: babitakhadka@gmail.com</p>
-              <p>Password: darshan10</p>
+              <p>Password: babita10</p>
             </div>
           </form>
 
