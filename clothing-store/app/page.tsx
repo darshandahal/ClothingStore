@@ -10,11 +10,7 @@ export default function RootPage() {
 }
 
 
-// import OnlinePage from "@/components/online-overview"
 
-// export default function Online() {
-//   return <OnlinePage />
-// }
 
 // import InstorePage from "@/components/instore-overview"
 
