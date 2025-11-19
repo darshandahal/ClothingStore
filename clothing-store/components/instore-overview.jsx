@@ -8,7 +8,6 @@ export default function InStoreInventory() {
   const [activeCategory, setActiveCategory] = useState('new-arrivals');
   const [loading, setLoading] = useState(true);
 
-  // Working Clothing API (DummyJSON)
   const API = {
     men: [
       "https://dummyjson.com/products/category/mens-shirts",
@@ -24,7 +23,6 @@ export default function InStoreInventory() {
     ]
   };
 
-  // FETCH clothing items
   const fetchCategory = async (urls, categoryName) => {
     let all = [];
     for (const url of urls) {
@@ -40,7 +38,7 @@ export default function InStoreInventory() {
       price: p.price,
       image: p.thumbnail,
       category: categoryName,
-      stock: Math.floor(Math.random() * 30) + 5, 
+      stock: Math.floor(Math.random() * 30) + 5,
       onSale: Math.random() > 0.7,
       discount: Math.random() > 0.7 ? Math.floor(Math.random() * 30) + 10 : 0
     }));
@@ -82,8 +80,17 @@ export default function InStoreInventory() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow-sm border-b">
+    <div
+      className="min-h-screen bg-gray-50"
+      style={{
+        backgroundImage: 'url(/instore.jpg)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed'
+      }}
+    >
+      {/* HEADER */}
+      <div className="bg-white/90 shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 py-6">
           <h1 className="text-3xl font-bold">Babita In-Store Inventory</h1>
 
@@ -113,7 +120,7 @@ export default function InStoreInventory() {
         </div>
       </div>
 
-      {/* Inventory Grid */}
+      {/* INVENTORY GRID */}
       <div className="max-w-7xl mx-auto px-4 py-8">
         {loading ? (
           <div className="text-center py-20">
@@ -123,7 +130,9 @@ export default function InStoreInventory() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredProducts.map(product => (
-              <div key={product.id} className="bg-white shadow rounded-lg overflow-hidden">
+              <div key={product.id} className="bg-white shadow rounded-lg overflow-hidden relative">
+                
+                {/* Product Image */}
                 <div className="relative h-64 bg-gray-100">
                   <img
                     src={product.image}
@@ -142,12 +151,31 @@ export default function InStoreInventory() {
                   )}
                 </div>
 
+                {/* Product Details */}
                 <div className="p-4">
                   <h3 className="text-sm font-semibold line-clamp-2">{product.title}</h3>
                   <p className="text-xs text-gray-500 line-clamp-2">{product.description}</p>
 
-                  <div className="mt-3">
-                    <p className="text-lg font-bold">${product.price}</p>
+                  <div className="mt-3 flex items-center justify-between">
+                    <div>
+                      <p className="text-lg font-bold">${product.price}</p>
+
+                      <p className="text-sm text-gray-700 font-medium mt-1">
+                        {product.stock <= 5
+                          ? "⚠️ Low Stock"
+                          : product.stock <= 15
+                          ? "🟡 Medium"
+                          : "🟢 In Stock"}
+                      </p>
+                    </div>
+
+                    {/* CART BUTTON */}
+                    <button
+                      className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-full shadow-md transition"
+                      onClick={() => alert(`Added "${product.title}" to cart!`)}
+                    >
+                      🛒
+                    </button>
                   </div>
                 </div>
               </div>
