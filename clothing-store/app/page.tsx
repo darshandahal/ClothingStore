@@ -5,11 +5,11 @@
 // }
 
 
-// import HomePage from "@/components/home-page"
+import HomePage from "@/components/home-page"
 
-// export default function Home() {
-//   return <HomePage />
-// }
+export default function Home() {
+  return <HomePage />
+}
 
 // import MarketingPage from "@/components/marketing"
 
@@ -23,8 +23,8 @@
 //   return <LoginPage />
 // }
 
-import RegisterPage from "@/components/register"
+// import RegisterPage from "@/components/register"
 
-export default function Register() {
-  return <RegisterPage />
-}
+// export default function Register() {
+//   return <RegisterPage />
+// }
