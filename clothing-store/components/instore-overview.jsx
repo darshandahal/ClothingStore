@@ -1,26 +1,28 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
+import { useCart } from "@/context/CartContext";
 
 export default function InStoreInventory() {
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
-  const [activeCategory, setActiveCategory] = useState('new-arrivals');
+  const [activeCategory, setActiveCategory] = useState("new-arrivals");
   const [loading, setLoading] = useState(true);
+  const { addToCart } = useCart();
 
   const API = {
     men: [
       "https://dummyjson.com/products/category/mens-shirts",
-      "https://dummyjson.com/products/category/mens-shoes"
+      "https://dummyjson.com/products/category/mens-shoes",
     ],
     women: [
       "https://dummyjson.com/products/category/womens-dresses",
-      "https://dummyjson.com/products/category/womens-shoes"
+      "https://dummyjson.com/products/category/womens-shoes",
     ],
     kids: [
       "https://dummyjson.com/products/category/tops",
-      "https://dummyjson.com/products/category/sunglasses"
-    ]
+      "https://dummyjson.com/products/category/sunglasses",
+    ],
   };
 
   const fetchCategory = async (urls, categoryName) => {
@@ -31,7 +33,7 @@ export default function InStoreInventory() {
       all = [...all, ...data.products];
     }
 
-    return all.map(p => ({
+    return all.map((p) => ({
       id: p.id,
       title: p.title,
       description: p.description,
@@ -40,7 +42,7 @@ export default function InStoreInventory() {
       category: categoryName,
       stock: Math.floor(Math.random() * 30) + 5,
       onSale: Math.random() > 0.7,
-      discount: Math.random() > 0.7 ? Math.floor(Math.random() * 30) + 10 : 0
+      discount: Math.random() > 0.7 ? Math.floor(Math.random() * 30) + 10 : 0,
     }));
   };
 
@@ -73,9 +75,9 @@ export default function InStoreInventory() {
     if (cat === "new-arrivals") {
       setFilteredProducts(products);
     } else if (cat === "sale") {
-      setFilteredProducts(products.filter(p => p.onSale));
+      setFilteredProducts(products.filter((p) => p.onSale));
     } else {
-      setFilteredProducts(products.filter(p => p.category === cat));
+      setFilteredProducts(products.filter((p) => p.category === cat));
     }
   };
 
@@ -83,10 +85,10 @@ export default function InStoreInventory() {
     <div
       className="min-h-screen bg-gray-50"
       style={{
-        backgroundImage: 'url(/instore.jpg)',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundAttachment: 'fixed'
+        backgroundImage: "url(/instore.jpg)",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundAttachment: "fixed",
       }}
     >
       {/* HEADER */}
@@ -100,8 +102,8 @@ export default function InStoreInventory() {
               { id: "men", label: "Men" },
               { id: "women", label: "Women" },
               { id: "kids", label: "Kids" },
-              { id: "sale", label: "Sale" }
-            ].map(btn => (
+              { id: "sale", label: "Sale" },
+            ].map((btn) => (
               <button
                 key={btn.id}
                 onClick={() => handleCategoryChange(btn.id)}
@@ -129,9 +131,11 @@ export default function InStoreInventory() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredProducts.map(product => (
-              <div key={product.id} className="bg-white shadow rounded-lg overflow-hidden relative">
-                
+            {filteredProducts.map((product) => (
+              <div
+                key={product.id}
+                className="bg-white shadow rounded-lg overflow-hidden relative"
+              >
                 {/* Product Image */}
                 <div className="relative h-64 bg-gray-100">
                   <img
@@ -153,8 +157,12 @@ export default function InStoreInventory() {
 
                 {/* Product Details */}
                 <div className="p-4">
-                  <h3 className="text-sm font-semibold line-clamp-2">{product.title}</h3>
-                  <p className="text-xs text-gray-500 line-clamp-2">{product.description}</p>
+                  <h3 className="text-sm font-semibold line-clamp-2">
+                    {product.title}
+                  </h3>
+                  <p className="text-xs text-gray-500 line-clamp-2">
+                    {product.description}
+                  </p>
 
                   <div className="mt-3 flex items-center justify-between">
                     <div>
@@ -172,7 +180,10 @@ export default function InStoreInventory() {
                     {/* CART BUTTON */}
                     <button
                       className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-full shadow-md transition"
-                      onClick={() => alert(`Added "${product.title}" to cart!`)}
+                      onClick={() => {
+                        addToCart(product, "instore");
+                        alert(`Added "${product.title}" to cart!`);
+                      }}
                     >
                       🛒
                     </button>
@@ -184,7 +195,9 @@ export default function InStoreInventory() {
         )}
 
         {filteredProducts.length === 0 && (
-          <div className="text-center py-10 text-gray-600">No products found.</div>
+          <div className="text-center py-10 text-gray-600">
+            No products found.
+          </div>
         )}
       </div>
     </div>

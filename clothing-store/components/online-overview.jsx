@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { ShoppingCart } from 'lucide-react';
+import { useCart } from '@/context/CartContext';
 
 export default function OnlineOverview() {
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [activeCategory, setActiveCategory] = useState('new-arrivals');
   const [loading, setLoading] = useState(true);
+  const { addToCart } = useCart();
 
   // Fetch products from FakeStore API
   useEffect(() => {
@@ -63,8 +65,7 @@ export default function OnlineOverview() {
   };
 
   const handleAddToCart = (product) => {
-    // Add your cart logic here
-    console.log('Added to cart:', product);
+    addToCart(product, 'online');
     alert(`${product.title} added to cart!`);
   };
 
