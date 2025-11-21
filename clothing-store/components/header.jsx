@@ -47,7 +47,7 @@ export function Header() {
               </AvatarFallback>
             </Avatar>
             <div className="text-sm">
-              <div className="font-medium text-gray-900">Babita Khadka</div>
+              <div className="font-medium text-gray-900">Mandira Bhattrai</div>
               <div className="text-gray-500 text-xs">Welcome back!</div>
             </div>
           </div>

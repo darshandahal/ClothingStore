@@ -61,7 +61,7 @@ export default function LoginPage() {
             </div>
           </div>
           <CardTitle className="text-2xl font-bold text-purple-800">
-            Babita Clothing Store
+            Mandira Fancy Store
           </CardTitle>
           <p className="text-sm text-gray-600 mt-2">Welcome back! Please login to your account</p>
         </CardHeader>
@@ -125,8 +125,8 @@ export default function LoginPage() {
 
             <div className="text-xs bg-blue-50 p-3 rounded text-gray-600">
               <p className="font-semibold mb-1">Demo Credentials:</p>
-              <p>Email: babitakhadka@gmail.com</p>
-              <p>Password: babita10</p>
+              <p>Email: store@gmail.com</p>
+              <p>Password: Store10</p>
             </div>
           </form>
 
