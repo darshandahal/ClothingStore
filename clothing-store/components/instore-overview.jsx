@@ -94,7 +94,7 @@ export default function InStoreInventory() {
       {/* HEADER */}
       <div className="bg-white/90 shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 py-6">
-          <h1 className="text-3xl font-bold">Babita In-Store Inventory</h1>
+          <h1 className="text-3xl font-bold">Mandira's In-Store Inventory</h1>
 
           <div className="flex gap-4 mt-4 flex-wrap">
             {[
