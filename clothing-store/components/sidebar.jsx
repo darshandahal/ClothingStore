@@ -64,32 +64,7 @@ export function Sidebar() {
     </div>
   )
 }
-// "use client"
 
-// import Link from "next/link"
-// import { usePathname } from "next/navigation"
-// import { cn } from "@/lib/utils"
-// import {
-//   LayoutDashboard,
-//   ShoppingBag,
-//   ShoppingCart,
-//   Home,
-//   Package,
-//   Globe,
-//   Settings,
-// } from "lucide-react"
-
-// const navigation = [
-//   { name: "Home", href: "/home", icon: Home },
-//   { name: "In-Store", href: "/instore", icon: ShoppingBag },
-//   { name: "Online", href: "/online", icon: Globe },
-//   { name: "Cart", href: "/cart", icon: ShoppingCart },
-//   { name: "Billing", href: "/billing", icon: LayoutDashboard },
-//   { name: "Inventory", href: "/inventory", icon: Package },
-// ]
-
-// export function Sidebar() {
-//   const pathname = usePathname()
 
 //   return (
 //     <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
