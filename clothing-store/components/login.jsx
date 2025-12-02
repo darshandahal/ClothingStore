@@ -19,6 +19,7 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
 
+    //  this is where i want to handle authentication logic
     try {
       // Hardcoded credentials
       if (email === "babitakhadka@gmail.com" && password === "babita10") {
