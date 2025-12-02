@@ -10,6 +10,9 @@ export default function InStoreInventory() {
   const [loading, setLoading] = useState(true);
   const { addToCart } = useCart();
 
+
+  //  Dummy API endpoints for fetching products
+  // In a real application, i am replacing these with my actual backend API endpoints
   const API = {
     men: [
       "https://dummyjson.com/products/category/mens-shirts",
