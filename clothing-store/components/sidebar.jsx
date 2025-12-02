@@ -64,27 +64,3 @@ export function Sidebar() {
     </div>
   )
 }
-
-
-// export function Sidebar() {
-//   const pathname = usePathname() 
-//                   href={item.href}
-//                   className={cn(
-//                     "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors relative",
-//                     isActive ? "bg-green-50 text-green-600" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
-//                   )}
-//                 >
-//                   <item.icon className="w-5 h-5" />
-//                   {item.name}
-//                   {isActive && (
-//                     <div className="absolute right-55 top-1/2 -translate-y-1/2 w-1 h-8 bg-green-500 rounded-l" />
-//                   )}
-//                 </Link>
-//               </li>
-//             )
-//           })}
-//         </ul>
-//       </nav>
-//     </div>
-//   )
-// }
