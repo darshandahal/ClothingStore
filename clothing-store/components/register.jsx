@@ -98,7 +98,7 @@ export default function RegisterPage() {
           <CardTitle className="text-2xl font-bold text-purple-800">
             Create Your Account
           </CardTitle>
-          <p className="text-sm text-gray-600 mt-2">Join Babita Clothing Store today!</p>
+          <p className="text-sm text-gray-600 mt-2">Join Mandira Fancy Store today!</p>
         </CardHeader>
 
         <CardContent className="pt-4">

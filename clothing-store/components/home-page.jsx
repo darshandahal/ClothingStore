@@ -66,7 +66,7 @@ export default function HomePage() {
       <div className="space-y-8 p-6 relative z-10">
         {/* ==== PAGE HEADER ==== */}
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-purple-800">Babita Clothing Store</h1>
+          <h1 className="text-3xl font-bold text-purple-800">Mandira Fancy Store</h1>
           <Button variant="outline" size="sm" className="border-blue-500 text-blue-600 bg-white/80">
             <Calendar className="w-4 h-4 mr-2" />
             This Month

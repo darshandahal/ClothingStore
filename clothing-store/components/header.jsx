@@ -43,11 +43,11 @@ export function Header() {
           <div className="flex items-center gap-3">
             <Avatar className="w-8 h-8 bg-green-100">
               <AvatarFallback className="bg-green-100 text-green-600 text-sm font-semibold">
-                BK
+                MB
               </AvatarFallback>
             </Avatar>
             <div className="text-sm">
-              <div className="font-medium text-gray-900">Babita Khadka</div>
+              <div className="font-medium text-gray-900">Mandira Bhattrai</div>
               <div className="text-gray-500 text-xs">Welcome back!</div>
             </div>
           </div>
