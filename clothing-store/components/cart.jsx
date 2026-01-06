@@ -1,9 +1,10 @@
 'use client';
-
+import { useRouter } from "next/navigation";
 import { Trash2, Plus, Minus, ShoppingCart } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 
 export default function Cart() {
+  const router = useRouter(); // ADD THIS LINE
   const { cartItems, removeFromCart, updateQuantity, calculateTotal } = useCart();
 
   const CartSection = ({ title, items, source }) => {
@@ -195,8 +196,10 @@ export default function Cart() {
                   </div>
                 </div>
 
-                <button onClick={() => router.push('/billing')}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold transition-colors">
+                <button 
+                  onClick={() => router.push('/billing')}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold transition-colors"
+                >
                   Proceed to Billing
                 </button>
               </div>

@@ -1,103 +1,178 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createClient } from "@supabase/supabase-js";
+
+// Initialize Supabase
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
 
 export default function Inventory() {
   const [inventory, setInventory] = useState([]);
   const [showModal, setShowModal] = useState(false);
-  const [previewImage, setPreviewImage] = useState(null);
+  const [editingId, setEditingId] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("all");
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     quantity: "",
     price: "",
     category: "men",
-    photo: null,
-    photoSource: "upload",
     photoUrl: "",
   });
-  const [activeTab, setActiveTab] = useState("all");
+
+  // Fetch inventory from Supabase
+  useEffect(() => {
+    fetchInventory();
+  }, []);
+
+  const fetchInventory = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("inventory")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setInventory(data || []);
+    } catch (error) {
+      alert("Error fetching inventory: " + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handlePhotoUpload = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setPreviewImage(event.target?.result);
-        setFormData((prev) => ({ ...prev, photo: event.target?.result }));
-      };
-      reader.readAsDataURL(file);
-    }
+  const calculateStockStatus = (quantity) => {
+    if (quantity <= 5) return "Low";
+    if (quantity <= 15) return "Medium";
+    return "In Stock";
   };
 
-  const handlePhotoUrlChange = (e) => {
-    const url = e.target.value;
-    setFormData((prev) => ({ ...prev, photoUrl: url }));
-    if (url) {
-      setPreviewImage(url);
-    }
-  };
-
-  const handleAddItem = () => {
+  const handleAddItem = async () => {
     if (
       !formData.title ||
       !formData.description ||
       !formData.quantity ||
-      !formData.price
+      !formData.price ||
+      !formData.photoUrl
     ) {
       alert("Please fill in all required fields");
       return;
     }
 
-    const newItem = {
-      id: Date.now(),
-      title: formData.title,
-      description: formData.description,
-      quantity: parseInt(formData.quantity),
-      price: parseFloat(formData.price),
-      category: formData.category,
-      image:
-        formData.photoSource === "upload"
-          ? previewImage
-          : formData.photoUrl || "/placeholder.jpg",
-      dateAdded: new Date().toLocaleDateString(),
-      stock:
-        parseInt(formData.quantity) <= 5
-          ? "Low"
-          : parseInt(formData.quantity) <= 15
-            ? "Medium"
-            : "In Stock",
-    };
+    try {
+      const stockStatus = calculateStockStatus(parseInt(formData.quantity));
 
-    setInventory((prev) => [newItem, ...prev]);
-    alert(`"${formData.title}" added to inventory!`);
+      if (editingId) {
+        // Update existing item
+        const { error } = await supabase
+          .from("inventory")
+          .update({
+            title: formData.title,
+            description: formData.description,
+            quantity: parseInt(formData.quantity),
+            price: parseFloat(formData.price),
+            category: formData.category,
+            photo_url: formData.photoUrl,
+            stock_status: stockStatus,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", editingId);
 
+        if (error) throw error;
+        alert("Item updated successfully!");
+        setEditingId(null);
+      } else {
+        // Add new item
+        const { error } = await supabase.from("inventory").insert({
+          title: formData.title,
+          description: formData.description,
+          quantity: parseInt(formData.quantity),
+          price: parseFloat(formData.price),
+          category: formData.category,
+          photo_url: formData.photoUrl,
+          stock_status: stockStatus,
+        });
+
+        if (error) throw error;
+        alert(`"${formData.title}" added to inventory!`);
+      }
+
+      // Reset form and refresh inventory
+      setFormData({
+        title: "",
+        description: "",
+        quantity: "",
+        price: "",
+        category: "men",
+        photoUrl: "",
+      });
+      setShowModal(false);
+      fetchInventory();
+    } catch (error) {
+      alert("Error saving item: " + error.message);
+    }
+  };
+
+  const handleEditItem = (item) => {
+    setFormData({
+      title: item.title,
+      description: item.description,
+      quantity: item.quantity.toString(),
+      price: item.price.toString(),
+      category: item.category,
+      photoUrl: item.photo_url,
+    });
+    setEditingId(item.id);
+    setShowModal(true);
+  };
+
+  const handleDeleteItem = async (id, title) => {
+    if (confirm(`Are you sure you want to delete "${title}"?`)) {
+      try {
+        const { error } = await supabase
+          .from("inventory")
+          .delete()
+          .eq("id", id);
+
+        if (error) throw error;
+        alert("Item deleted successfully!");
+        fetchInventory();
+      } catch (error) {
+        alert("Error deleting item: " + error.message);
+      }
+    }
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setEditingId(null);
     setFormData({
       title: "",
       description: "",
       quantity: "",
       price: "",
       category: "men",
-      photo: null,
-      photoSource: "upload",
       photoUrl: "",
     });
-    setPreviewImage(null);
-    setShowModal(false);
   };
 
   const getFilteredInventory = () => {
     if (activeTab === "all") return inventory;
-    if (activeTab === "low") return inventory.filter((item) => item.stock === "Low");
+    if (activeTab === "low") return inventory.filter((item) => item.stock_status === "Low");
     if (activeTab === "medium")
-      return inventory.filter((item) => item.stock === "Medium");
+      return inventory.filter((item) => item.stock_status === "Medium");
     if (activeTab === "in-stock")
-      return inventory.filter((item) => item.stock === "In Stock");
+      return inventory.filter((item) => item.stock_status === "In Stock");
     if (activeTab === "recently-added") return inventory.slice(0, 10);
   };
 
@@ -117,7 +192,10 @@ export default function Inventory() {
           <div className="flex justify-between items-center">
             <h1 className="text-3xl font-bold">Inventory Management</h1>
             <button
-              onClick={() => setShowModal(true)}
+              onClick={() => {
+                closeModal();
+                setShowModal(true);
+              }}
               className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
             >
               + Add to Inventory
@@ -151,11 +229,18 @@ export default function Inventory() {
 
       {/* INVENTORY GRID */}
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {filteredItems.length === 0 ? (
+        {loading ? (
+          <div className="text-center py-20">
+            <p className="text-gray-600 text-lg">Loading inventory...</p>
+          </div>
+        ) : filteredItems.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-lg">
             <p className="text-gray-600 text-lg">No items found.</p>
             <button
-              onClick={() => setShowModal(true)}
+              onClick={() => {
+                closeModal();
+                setShowModal(true);
+              }}
               className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg"
             >
               Add Your First Item
@@ -171,7 +256,7 @@ export default function Inventory() {
                 {/* Image */}
                 <div className="h-48 bg-gray-100 overflow-hidden">
                   <img
-                    src={item.image}
+                    src={item.photo_url || "/placeholder.jpg"}
                     alt={item.title}
                     className="w-full h-full object-cover"
                   />
@@ -185,10 +270,10 @@ export default function Inventory() {
                     </h3>
                     <span
                       className={`text-xs px-3 py-1 rounded-full font-medium ${getStockColor(
-                        item.stock
+                        item.stock_status
                       )}`}
                     >
-                      {item.stock}
+                      {item.stock_status}
                     </span>
                   </div>
 
@@ -196,7 +281,7 @@ export default function Inventory() {
                     {item.description}
                   </p>
 
-                  <div className="space-y-2 text-sm">
+                  <div className="space-y-2 text-sm mb-4">
                     <div className="flex justify-between">
                       <span className="text-gray-500">Quantity:</span>
                       <span className="font-semibold">{item.quantity}</span>
@@ -213,8 +298,26 @@ export default function Inventory() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-500">Added:</span>
-                      <span className="font-semibold">{item.dateAdded}</span>
+                      <span className="font-semibold">
+                        {new Date(item.date_added).toLocaleDateString()}
+                      </span>
                     </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-2 pt-4 border-t">
+                    <button
+                      onClick={() => handleEditItem(item)}
+                      className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg font-medium transition-colors"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDeleteItem(item.id, item.title)}
+                      className="flex-1 px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg font-medium transition-colors"
+                    >
+                      Delete
+                    </button>
                   </div>
                 </div>
               </div>
@@ -230,9 +333,11 @@ export default function Inventory() {
             {/* Modal Header */}
             <div className="bg-blue-600 text-white p-6 sticky top-0">
               <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold">Add Item to Inventory</h2>
+                <h2 className="text-2xl font-bold">
+                  {editingId ? "Edit Item" : "Add Item to Inventory"}
+                </h2>
                 <button
-                  onClick={() => setShowModal(false)}
+                  onClick={closeModal}
                   className="text-2xl hover:opacity-75"
                 >
                   ✕
@@ -323,74 +428,25 @@ export default function Inventory() {
                 </select>
               </div>
 
-              {/* Photo Section */}
-              <div className="border-t pt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Product Photo
+              {/* Photo URL */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Product Photo URL *
                 </label>
-
-                <div className="flex gap-4 mb-4">
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="photoSource"
-                      value="upload"
-                      checked={formData.photoSource === "upload"}
-                      onChange={handleInputChange}
-                      className="mr-2"
-                    />
-                    <span className="text-sm">Upload from Device</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="photoSource"
-                      value="url"
-                      checked={formData.photoSource === "url"}
-                      onChange={handleInputChange}
-                      className="mr-2"
-                    />
-                    <span className="text-sm">Photo URL</span>
-                  </label>
-                </div>
-
-                {formData.photoSource === "upload" ? (
-                  <div>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePhotoUpload}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                    />
-                  </div>
-                ) : (
-                  <div>
-                    <input
-                      type="url"
-                      value={formData.photoUrl}
-                      onChange={handlePhotoUrlChange}
-                      placeholder="https://example.com/image.jpg"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                )}
-
-                {previewImage && (
-                  <div className="mt-4">
-                    <p className="text-sm text-gray-600 mb-2">Preview:</p>
-                    <img
-                      src={previewImage}
-                      alt="Preview"
-                      className="h-40 w-40 object-cover rounded-lg"
-                    />
-                  </div>
-                )}
+                <input
+                  type="url"
+                  name="photoUrl"
+                  value={formData.photoUrl}
+                  onChange={handleInputChange}
+                  placeholder="https://example.com/image.jpg"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
               </div>
 
               {/* Buttons */}
               <div className="flex gap-4 pt-4 border-t">
                 <button
-                  onClick={() => setShowModal(false)}
+                  onClick={closeModal}
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium"
                 >
                   Cancel
@@ -399,7 +455,7 @@ export default function Inventory() {
                   onClick={handleAddItem}
                   className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
                 >
-                  Add Item to Inventory
+                  {editingId ? "Update Item" : "Add Item to Inventory"}
                 </button>
               </div>
             </div>
