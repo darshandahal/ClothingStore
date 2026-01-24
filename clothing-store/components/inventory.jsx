@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
-
+import Footer from "@/components/Footer";
 // Initialize Supabase
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -20,8 +20,9 @@ export default function Inventory() {
     description: "",
     quantity: "",
     price: "",
-    category: "men",
+    category: "women",
     photoUrl: "",
+    availableIn: ["online", "instore"], // New field
   });
 
   // Fetch inventory from Supabase
@@ -51,6 +52,15 @@ export default function Inventory() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleAvailabilityChange = (platform) => {
+    setFormData((prev) => {
+      const availableIn = prev.availableIn.includes(platform)
+        ? prev.availableIn.filter((p) => p !== platform)
+        : [...prev.availableIn, platform];
+      return { ...prev, availableIn };
+    });
+  };
+
   const calculateStockStatus = (quantity) => {
     if (quantity <= 5) return "Low";
     if (quantity <= 15) return "Medium";
@@ -63,9 +73,10 @@ export default function Inventory() {
       !formData.description ||
       !formData.quantity ||
       !formData.price ||
-      !formData.photoUrl
+      !formData.photoUrl ||
+      formData.availableIn.length === 0
     ) {
-      alert("Please fill in all required fields");
+      alert("Please fill in all required fields and select at least one platform");
       return;
     }
 
@@ -84,6 +95,7 @@ export default function Inventory() {
             category: formData.category,
             photo_url: formData.photoUrl,
             stock_status: stockStatus,
+            available_in: formData.availableIn,
             updated_at: new Date().toISOString(),
           })
           .eq("id", editingId);
@@ -101,6 +113,7 @@ export default function Inventory() {
           category: formData.category,
           photo_url: formData.photoUrl,
           stock_status: stockStatus,
+          available_in: formData.availableIn,
         });
 
         if (error) throw error;
@@ -113,8 +126,9 @@ export default function Inventory() {
         description: "",
         quantity: "",
         price: "",
-        category: "men",
+        category: "women",
         photoUrl: "",
+        availableIn: ["online", "instore"],
       });
       setShowModal(false);
       fetchInventory();
@@ -131,6 +145,7 @@ export default function Inventory() {
       price: item.price.toString(),
       category: item.category,
       photoUrl: item.photo_url,
+      availableIn: item.available_in || ["online", "instore"],
     });
     setEditingId(item.id);
     setShowModal(true);
@@ -161,8 +176,9 @@ export default function Inventory() {
       description: "",
       quantity: "",
       price: "",
-      category: "men",
+      category: "women",
       photoUrl: "",
+      availableIn: ["online", "instore"],
     });
   };
 
@@ -190,7 +206,7 @@ export default function Inventory() {
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold">Inventory Management</h1>
+            <h1 className="text-3xl font-bold">Inventory Management (Main)</h1>
             <button
               onClick={() => {
                 closeModal();
@@ -288,7 +304,7 @@ export default function Inventory() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-500">Price:</span>
-                      <span className="font-semibold">${item.price}</span>
+                      <span className="font-semibold">Rs. {item.price}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-500">Category:</span>
@@ -297,9 +313,15 @@ export default function Inventory() {
                       </span>
                     </div>
                     <div className="flex justify-between">
+                      <span className="text-gray-500">Available In:</span>
+                      <span className="font-semibold">
+                        {item.available_in?.join(", ") || "N/A"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
                       <span className="text-gray-500">Added:</span>
                       <span className="font-semibold">
-                        {new Date(item.date_added).toLocaleDateString()}
+                        {new Date(item.created_at).toLocaleDateString()}
                       </span>
                     </div>
                   </div>
@@ -396,7 +418,7 @@ export default function Inventory() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Price *
+                    Price (Rs.) *
                   </label>
                   <input
                     type="number"
@@ -422,10 +444,35 @@ export default function Inventory() {
                   onChange={handleInputChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option value="men">Men</option>
                   <option value="women">Women</option>
-                  <option value="kids">Kids</option>
                 </select>
+              </div>
+
+              {/* Available In */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Available In *
+                </label>
+                <div className="flex gap-4">
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={formData.availableIn.includes("online")}
+                      onChange={() => handleAvailabilityChange("online")}
+                      className="mr-2"
+                    />
+                    Online Store
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={formData.availableIn.includes("instore")}
+                      onChange={() => handleAvailabilityChange("instore")}
+                      className="mr-2"
+                    />
+                    In-Store
+                  </label>
+                </div>
               </div>
 
               {/* Photo URL */}
@@ -462,6 +509,9 @@ export default function Inventory() {
           </div>
         </div>
       )}
+
+      {/* FOOTER */}
+            <Footer />
     </div>
   );
 }

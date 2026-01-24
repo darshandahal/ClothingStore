@@ -2,9 +2,9 @@
 import { useRouter } from "next/navigation";
 import { Trash2, Plus, Minus, ShoppingCart } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
-
+import Footer from "@/components/Footer";
 export default function Cart() {
-  const router = useRouter(); // ADD THIS LINE
+  const router = useRouter();
   const { cartItems, removeFromCart, updateQuantity, calculateTotal } = useCart();
 
   const CartSection = ({ title, items, source }) => {
@@ -42,7 +42,7 @@ export default function Cart() {
                       {item.title}
                     </h3>
                     <p className="text-sm text-gray-500 mt-1">
-                      {source === 'instore' && `Stock: ${item.stock}`}
+                      {source === 'instore' && item.stock !== undefined && `Stock: ${item.stock}`}
                     </p>
 
                     {/* Price Info */}
@@ -50,10 +50,10 @@ export default function Cart() {
                       {item.onSale ? (
                         <div className="flex gap-2 items-center">
                           <span className="text-lg font-bold text-green-600">
-                            ${(item.price * (1 - (item.discount || 0) / 100)).toFixed(2)}
+                            Rs. {(item.price * (1 - (item.discount || 0) / 100)).toFixed(2)}
                           </span>
                           <span className="text-sm text-gray-500 line-through">
-                            ${item.price.toFixed(2)}
+                            Rs. {item.price.toFixed(2)}
                           </span>
                           <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">
                             {item.discount}% OFF
@@ -61,7 +61,7 @@ export default function Cart() {
                         </div>
                       ) : (
                         <span className="text-lg font-bold text-gray-900">
-                          ${item.price.toFixed(2)}
+                          Rs. {item.price.toFixed(2)}
                         </span>
                       )}
                     </div>
@@ -98,7 +98,7 @@ export default function Cart() {
                     <div className="text-right">
                       <p className="text-sm text-gray-500">Subtotal</p>
                       <p className="text-lg font-bold">
-                        ${(
+                        Rs. {(
                           (item.onSale
                             ? item.price * (1 - (item.discount || 0) / 100)
                             : item.price) * item.quantity
@@ -116,7 +116,7 @@ export default function Cart() {
                 <div className="w-64">
                   <div className="flex justify-between text-gray-600 mb-2">
                     <span>Subtotal ({items.length} items):</span>
-                    <span>${total.toFixed(2)}</span>
+                    <span>Rs. {total.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -179,20 +179,20 @@ export default function Cart() {
                   {cartItems.instore.length > 0 && (
                     <div className="flex justify-between text-gray-700">
                       <span>In-Store Subtotal:</span>
-                      <span className="font-semibold">${inStoreTotal.toFixed(2)}</span>
+                      <span className="font-semibold">Rs. {inStoreTotal.toFixed(2)}</span>
                     </div>
                   )}
 
                   {cartItems.online.length > 0 && (
                     <div className="flex justify-between text-gray-700">
                       <span>Online Subtotal:</span>
-                      <span className="font-semibold">${onlineTotal.toFixed(2)}</span>
+                      <span className="font-semibold">Rs. {onlineTotal.toFixed(2)}</span>
                     </div>
                   )}
 
                   <div className="border-t pt-3 flex justify-between text-lg font-bold text-gray-900">
                     <span>Grand Total:</span>
-                    <span className="text-blue-600">${grandTotal.toFixed(2)}</span>
+                    <span className="text-blue-600">Rs. {grandTotal.toFixed(2)}</span>
                   </div>
                 </div>
 

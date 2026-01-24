@@ -3,6 +3,8 @@
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import Footer from "@/components/Footer";
+
 
 export default function MarketingPage() {
   return (
@@ -67,6 +69,8 @@ export default function MarketingPage() {
           </div>
         </div>
       </div>
+      {/* FOOTER */}
+            <Footer />
     </div>
   );
 }

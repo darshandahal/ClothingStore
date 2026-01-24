@@ -3,8 +3,10 @@
 import { useState } from "react";
 import Image from "next/image";
 import { useCart } from "@/context/CartContext";
-import { Banknote, Printer, CheckCircle, QrCode } from "lucide-react";
+import { Banknote, Printer, CheckCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { v4 as uuidv4 } from "uuid";
+import Footer from "@/components/Footer";
 
 /* ================= CONSTANTS ================= */
 const USD_TO_NPR = 141.61;
@@ -18,6 +20,9 @@ export default function Billing() {
   const [cashAmount, setCashAmount] = useState("");
   const [paymentStatus, setPaymentStatus] = useState(null);
   const [paidMethod, setPaidMethod] = useState("");
+
+  // Generate a unique transaction UUID for eSewa
+  const transactionUUID = uuidv4();
 
   /* ================= TOTALS ================= */
   const totalUSD =
@@ -60,6 +65,7 @@ export default function Billing() {
 
   /* ================= ESEWA ================= */
   const handleEsewaPayment = async () => {
+    // For testing: you may save the invoice here too, real verification comes after redirect
     await saveInvoiceToSupabase("eSewa");
     setPaidMethod("eSewa");
     setPaymentStatus("paid");
@@ -130,7 +136,7 @@ export default function Billing() {
             onClick={handlePrint}
             className="mt-6 w-full bg-purple-600 text-white py-3 rounded-xl font-semibold"
           >
-            <Printer className="inline mr-2" /> Print Invoice
+            Print Invoice
           </button>
         </div>
       </div>
@@ -161,21 +167,21 @@ export default function Billing() {
             </button>
 
             {/* ESEWA */}
-           <button
-  onClick={() => setPaymentMethod("esewa")}
-  className="border p-5 rounded-xl flex items-center gap-4 hover:shadow-md transition"
->
-  <Image
-    src="/esewa-live.png"
-    alt="eSewa Logo"
-    width={100}
-    height={100}
-  />
-  <div>
-    <p className="font-semibold">Pay with eSewa</p>
-    <p className="text-sm text-gray-500">Scan QR to pay</p>
-  </div>
-</button>
+            <button
+              onClick={() => setPaymentMethod("esewa")}
+              className="border p-5 rounded-xl flex items-center gap-4 hover:shadow-md transition"
+            >
+              <Image
+                src="/esewa-live.png"
+                alt="eSewa Logo"
+                width={100}
+                height={100}
+              />
+              <div>
+                <p className="font-semibold">Pay with eSewa</p>
+                <p className="text-sm text-gray-500">Scan QR to pay</p>
+              </div>
+            </button>
           </div>
         )}
 
@@ -200,27 +206,51 @@ export default function Billing() {
 
         {/* ================= ESEWA ================= */}
         {paymentMethod === "esewa" && (
-          <div className="mt-6 text-center space-y-4">
+          <div className="mt-8 flex flex-col items-center text-center">
+
             <Image
-    src="/esewa-live.png"
-    alt="eSewa Logo"
-    width={100}
-    height={100}
-  />
-            <p className="font-semibold text-lg">
-              Amount: Rs. {grandTotal.toFixed(2)}
+              src="/esewa-live.png"
+              alt="eSewa Logo"
+              width={80}
+              height={80}
+              className="mx-auto mb-4"
+            />
+
+            <h3 className="text-xl font-semibold mb-1">
+              Pay with eSewa
+            </h3>
+
+            <p className="text-gray-500 mb-4">
+              You will be redirected to eSewa to complete the payment
             </p>
 
-            <div className="flex justify-center">
-              <QrCode size={160} />
-            </div>
-
-            <button
-              onClick={handleEsewaPayment}
-              className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold"
+            <form
+              action="https://rc-epay.esewa.com.np/api/epay/main/v2/form"
+              method="POST"
+              className="w-full max-w-sm space-y-3"
             >
-              I have completed payment
-            </button>
+              <input type="hidden" name="amount" value={totalNPR.toFixed(2)} />
+              <input type="hidden" name="tax_amount" value={vat.toFixed(2)} />
+              <input type="hidden" name="total_amount" value={grandTotal.toFixed(2)} />
+
+              <input type="hidden" name="product_code" value="EPAYTEST" />
+          
+
+              {/* For testing, signature can be skipped. Production: generate server-side */}
+              {/* <input type="hidden" name="signed_field_names" value="total_amount,transaction_uuid,product_code" />
+              <input type="hidden" name="signature" value={signature} /> */}
+
+              <input type="hidden" name="success_url" value="http://localhost:3000/esewa-success" />
+              <input type="hidden" name="failure_url" value="http://localhost:3000/esewa-failure" />
+
+              <button
+                type="submit"
+                className="mt-4 w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-semibold"
+              >
+                Pay via eSewa
+              </button>
+            </form>
+
           </div>
         )}
 
