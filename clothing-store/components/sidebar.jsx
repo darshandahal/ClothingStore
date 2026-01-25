@@ -16,7 +16,7 @@ import {
 const navigation = [
   { name: "Home", href: "/home", icon: Home },
   { name: "In-Store", href: "/instore", icon: ShoppingBag },
-  { name: "Online", href: "/online", icon: Globe },
+  
   { name: "Cart", href: "/cart", icon: ShoppingCart },
   { name: "Billing", href: "/billing", icon: LayoutDashboard },
   { name: "Inventory", href: "/inventory", icon: Package },

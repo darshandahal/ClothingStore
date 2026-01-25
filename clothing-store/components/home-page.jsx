@@ -213,10 +213,12 @@ export default function HomePage() {
                   <Gift className="w-5 h-5 text-blue-500" />
                   <span className="text-sm text-blue-600">Add Offer</span>
                 </button>
-                <button className="h-20 w-full border border-blue-300 rounded-lg flex flex-col items-center justify-center hover:bg-blue-50">
-                  <BarChart3 className="w-5 h-5 text-blue-500" />
-                  <span className="text-sm text-blue-600">View Sales</span>
-                </button>
+                <a href="/sales">
+                  <button className="h-20 w-full border border-blue-300 rounded-lg flex flex-col items-center justify-center hover:bg-blue-50">
+                    <BarChart3 className="w-5 h-5 text-blue-500" />
+                    <span className="text-sm text-blue-600">View Sales</span>
+                  </button>
+                </a>
                 <button className="h-20 w-full border border-blue-300 rounded-lg flex flex-col items-center justify-center hover:bg-blue-50">
                   <Calendar className="w-5 h-5 text-blue-500" />
                   <span className="text-sm text-blue-600">Events</span>

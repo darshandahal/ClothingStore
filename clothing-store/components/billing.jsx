@@ -1,102 +1,151 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
-import { Banknote, Printer, CheckCircle } from "lucide-react";
-import { supabase } from "@/lib/supabase";
-import { v4 as uuidv4 } from "uuid";
-import Footer from "@/components/Footer";
+import { Banknote, CheckCircle, ArrowLeft } from "lucide-react";
+import { createClient } from "@supabase/supabase-js";
 
-/* ================= CONSTANTS ================= */
-const USD_TO_NPR = 141.61;
-const VAT_PERCENTAGE = 13;
+// Initialize Supabase
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
 
-/* ================= COMPONENT ================= */
 export default function Billing() {
-  const { cartItems, calculateTotal } = useCart();
+  const router = useRouter();
+  const { cartItems, calculateTotal, clearCart } = useCart();
 
   const [paymentMethod, setPaymentMethod] = useState(null);
   const [cashAmount, setCashAmount] = useState("");
   const [paymentStatus, setPaymentStatus] = useState(null);
-  const [paidMethod, setPaidMethod] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
 
-  // Generate a unique transaction UUID for eSewa
-  const transactionUUID = uuidv4();
+  // Calculate totals
+  const instoreTotal = calculateTotal(cartItems.instore);
+  const onlineTotal = calculateTotal(cartItems.online);
+  const subtotal = instoreTotal + onlineTotal;
+  const vat = subtotal * 0.13; // 13% VAT
+  const grandTotal = subtotal + vat;
 
-  /* ================= TOTALS ================= */
-  const totalUSD =
-    calculateTotal(cartItems.instore) +
-    calculateTotal(cartItems.online);
+  // Record sale to database
+  const recordSale = async () => {
+    try {
+      const allItems = [...cartItems.instore, ...cartItems.online];
+      
+      // Determine source (if both, mark as 'mixed', otherwise use the one with items)
+      let source = 'mixed';
+      if (cartItems.instore.length > 0 && cartItems.online.length === 0) {
+        source = 'instore';
+      } else if (cartItems.online.length > 0 && cartItems.instore.length === 0) {
+        source = 'online';
+      }
 
-  const totalNPR = totalUSD * USD_TO_NPR;
-  const vat = totalNPR * (VAT_PERCENTAGE / 100);
-  const grandTotal = totalNPR + vat;
+      const { error } = await supabase.from("sales").insert({
+        customer_name: customerName || "Guest",
+        customer_phone: customerPhone || null,
+        total_amount: grandTotal,
+        total_items: allItems.reduce((sum, item) => sum + item.quantity, 0),
+        source: source,
+        payment_method: "Cash",
+        items: allItems, // Store cart items as JSON
+      });
 
-  /* ================= SAVE INVOICE ================= */
-  const saveInvoiceToSupabase = async (method) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    await supabase.from("invoices").insert({
-      user_id: user.id,
-      payment_method: method,
-      subtotal: totalNPR,
-      vat,
-      total: grandTotal,
-      items: {
-        instore: cartItems.instore,
-        online: cartItems.online,
-      },
-    });
+      if (error) throw error;
+      
+      console.log("Sale recorded successfully!");
+      return true;
+    } catch (error) {
+      console.error("Error recording sale:", error);
+      alert("Error recording sale: " + error.message);
+      return false;
+    }
   };
 
-  /* ================= CASH ================= */
+  // Handle cash payment
   const handleCashPayment = async () => {
     const cash = parseFloat(cashAmount);
+    
     if (!cash || cash < grandTotal) {
-      alert(`Enter at least Rs. ${grandTotal.toFixed(2)}`);
+      alert(`Please enter at least Rs. ${grandTotal.toFixed(2)}`);
       return;
     }
-    await saveInvoiceToSupabase("Cash");
-    setPaidMethod("Cash");
-    setPaymentStatus("paid");
+
+    // Record the sale
+    const saleRecorded = await recordSale();
+    
+    if (saleRecorded) {
+      setPaymentStatus("paid");
+      // Clear the cart after successful payment
+      setTimeout(() => {
+        clearCart();
+      }, 1000);
+    }
   };
 
-  /* ================= ESEWA ================= */
-  const handleEsewaPayment = async () => {
-    // For testing: you may save the invoice here too, real verification comes after redirect
-    await saveInvoiceToSupabase("eSewa");
-    setPaidMethod("eSewa");
-    setPaymentStatus("paid");
+  // Calculate change
+  const calculateChange = () => {
+    const cash = parseFloat(cashAmount);
+    if (cash && cash >= grandTotal) {
+      return cash - grandTotal;
+    }
+    return 0;
   };
 
-  /* ================= PRINT ================= */
+  // Print invoice
   const handlePrint = () => {
     const content = document.getElementById("invoice-print").innerHTML;
     const win = window.open("", "_blank");
-    win.document.write(`<html><body>${content}</body></html>`);
+    win.document.write(`
+      <html>
+        <head>
+          <title>Invoice - Mandira Fancy Store</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+            th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
+            th { background-color: #f3f4f6; }
+            .text-right { text-align: right; }
+            .text-center { text-center; }
+            .font-bold { font-weight: bold; }
+            .total-section { margin-top: 20px; text-align: right; }
+            .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; }
+          </style>
+        </head>
+        <body>${content}</body>
+      </html>
+    `);
     win.document.close();
     win.print();
     win.close();
   };
 
-  /* ================= PAID VIEW ================= */
+  // Success view after payment
   if (paymentStatus === "paid") {
+    const change = calculateChange();
+    
     return (
-      <div className="p-6">
+      <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-3xl mx-auto bg-white p-8 shadow-2xl rounded-2xl">
-
           <div className="text-center mb-6">
             <CheckCircle className="mx-auto text-green-600 w-16 h-16" />
-            <h2 className="text-3xl font-bold mt-3">Payment Successful</h2>
-            <p className="text-gray-500 mt-1">Paid via {paidMethod}</p>
+            <h2 className="text-3xl font-bold mt-3 text-gray-900">Payment Successful!</h2>
+            <p className="text-gray-500 mt-1">Paid via Cash</p>
           </div>
 
           <div id="invoice-print">
-            <h3 className="text-2xl font-bold text-center mb-4">
-              Mandira Fancy Store
-            </h3>
+            <h3 className="text-2xl font-bold text-center mb-2">Mandira Fancy Store</h3>
+            <p className="text-center text-sm text-gray-500 mb-6">
+              Date: {new Date().toLocaleString()}
+            </p>
+
+            {customerName && (
+              <div className="mb-4">
+                <p className="text-sm"><strong>Customer:</strong> {customerName}</p>
+                {customerPhone && <p className="text-sm"><strong>Phone:</strong> {customerPhone}</p>}
+              </div>
+            )}
 
             <table className="w-full border rounded overflow-hidden">
               <thead className="bg-gray-100">
@@ -104,156 +153,186 @@ export default function Billing() {
                   <th className="p-2 text-left">Item</th>
                   <th className="p-2 text-center">Qty</th>
                   <th className="p-2 text-right">Price</th>
+                  <th className="p-2 text-right">Total</th>
                 </tr>
               </thead>
               <tbody>
-                {[...cartItems.instore, ...cartItems.online].map((i) => (
-                  <tr key={i.id} className="border-t">
-                    <td className="p-2">{i.title}</td>
-                    <td className="p-2 text-center">{i.quantity}</td>
-                    <td className="p-2 text-right">
-                      Rs. {(i.price * i.quantity * USD_TO_NPR).toFixed(2)}
-                    </td>
+                {[...cartItems.instore, ...cartItems.online].map((item, index) => (
+                  <tr key={index} className="border-t">
+                    <td className="p-2">{item.title}</td>
+                    <td className="p-2 text-center">{item.quantity}</td>
+                    <td className="p-2 text-right">Rs. {item.price.toFixed(2)}</td>
+                    <td className="p-2 text-right">Rs. {(item.price * item.quantity).toFixed(2)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
 
-            <div className="mt-4 text-right space-y-1">
-              <p>Subtotal: Rs. {totalNPR.toFixed(2)}</p>
-              <p>VAT (13%): Rs. {vat.toFixed(2)}</p>
-              <p className="font-bold text-lg">
-                Total: Rs. {grandTotal.toFixed(2)}
+            <div className="total-section mt-6 space-y-2">
+              <p className="text-gray-700">Subtotal: <span className="font-semibold">Rs. {subtotal.toFixed(2)}</span></p>
+              <p className="text-gray-700">VAT (13%): <span className="font-semibold">Rs. {vat.toFixed(2)}</span></p>
+              <p className="text-xl font-bold text-gray-900 border-t pt-2">
+                Grand Total: Rs. {grandTotal.toFixed(2)}
               </p>
+              <p className="text-gray-700 mt-4">Cash Paid: <span className="font-semibold">Rs. {parseFloat(cashAmount).toFixed(2)}</span></p>
+              {change > 0 && (
+                <p className="text-green-600 font-bold">Change: Rs. {change.toFixed(2)}</p>
+              )}
             </div>
 
-            <div className="text-center text-sm text-gray-500 mt-8 border-t pt-4">
-              🙏 Thank you for visiting <strong>Mandira Fancy Store</strong>
+            <div className="footer text-sm text-gray-500">
+              Thank you for shopping at <strong>Mandira Fancy Store</strong>! 🙏
             </div>
           </div>
 
-          <button
-            onClick={handlePrint}
-            className="mt-6 w-full bg-purple-600 text-white py-3 rounded-xl font-semibold"
-          >
-            Print Invoice
-          </button>
+          <div className="flex gap-4 mt-6">
+            <button
+              onClick={handlePrint}
+              className="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-xl font-semibold transition"
+            >
+              Print Invoice
+            </button>
+            <button
+              onClick={() => router.push("/")}
+              className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-3 rounded-xl font-semibold transition"
+            >
+              Back to Home
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
-  /* ================= PAYMENT VIEW ================= */
+  // Main billing view
   return (
-    <div className="p-6">
-      <div className="max-w-3xl mx-auto bg-white p-8 shadow-2xl rounded-2xl">
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-3xl mx-auto">
+        {/* Header */}
+        <div className="mb-6 flex items-center gap-4">
+          <button
+            onClick={() => router.push("/cart")}
+            className="p-2 hover:bg-gray-200 rounded-lg transition"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <h1 className="text-3xl font-bold text-gray-900">Billing & Payment</h1>
+        </div>
 
-        <h2 className="text-2xl font-bold mb-6 text-center">
-          Billing & Payment
-        </h2>
-
-        {!paymentMethod && (
-          <div className="grid gap-4">
-            {/* CASH */}
-            <button
-              onClick={() => setPaymentMethod("cash")}
-              className="border p-5 rounded-xl flex items-center gap-4 hover:shadow-md transition"
-            >
-              <Banknote className="text-emerald-600" />
-              <div>
-                <p className="font-semibold">Cash Payment</p>
-                <p className="text-sm text-gray-500">Accept cash from customer</p>
+        <div className="bg-white p-8 shadow-2xl rounded-2xl">
+          {/* Order Summary */}
+          <div className="mb-8">
+            <h2 className="text-xl font-bold mb-4">Order Summary</h2>
+            <div className="space-y-2 text-gray-700">
+              <div className="flex justify-between">
+                <span>Subtotal:</span>
+                <span>Rs. {subtotal.toFixed(2)}</span>
               </div>
-            </button>
-
-            {/* ESEWA */}
-            <button
-              onClick={() => setPaymentMethod("esewa")}
-              className="border p-5 rounded-xl flex items-center gap-4 hover:shadow-md transition"
-            >
-              <Image
-                src="/esewa-live.png"
-                alt="eSewa Logo"
-                width={100}
-                height={100}
-              />
-              <div>
-                <p className="font-semibold">Pay with eSewa</p>
-                <p className="text-sm text-gray-500">Scan QR to pay</p>
+              <div className="flex justify-between">
+                <span>VAT (13%):</span>
+                <span>Rs. {vat.toFixed(2)}</span>
               </div>
-            </button>
+              <div className="flex justify-between text-xl font-bold border-t pt-2 mt-2">
+                <span>Grand Total:</span>
+                <span>Rs. {grandTotal.toFixed(2)}</span>
+              </div>
+            </div>
           </div>
-        )}
 
-        {/* ================= CASH ================= */}
-        {paymentMethod === "cash" && (
-          <div className="mt-6 space-y-4">
-            <input
-              type="number"
-              placeholder="Enter cash amount"
-              className="border p-3 w-full rounded-lg"
-              value={cashAmount}
-              onChange={(e) => setCashAmount(e.target.value)}
-            />
-            <button
-              onClick={handleCashPayment}
-              className="w-full bg-emerald-600 text-white py-3 rounded-xl font-semibold"
-            >
-              Complete Cash Payment
-            </button>
-          </div>
-        )}
+          {/* Payment Method Selection */}
+          {!paymentMethod && (
+            <div>
+              <h2 className="text-xl font-bold mb-4">Select Payment Method</h2>
+              <div className="grid gap-4">
+                <button
+                  onClick={() => setPaymentMethod("cash")}
+                  className="border-2 border-gray-200 p-5 rounded-xl flex items-center gap-4 hover:border-emerald-500 hover:bg-emerald-50 transition"
+                >
+                  <Banknote className="text-emerald-600 w-8 h-8" />
+                  <div className="text-left">
+                    <p className="font-semibold text-lg">Cash Payment</p>
+                    <p className="text-sm text-gray-500">Accept cash from customer</p>
+                  </div>
+                </button>
+              </div>
+            </div>
+          )}
 
-        {/* ================= ESEWA ================= */}
-        {paymentMethod === "esewa" && (
-          <div className="mt-8 flex flex-col items-center text-center">
+          {/* Cash Payment Form */}
+          {paymentMethod === "cash" && (
+            <div className="space-y-4">
+              <h2 className="text-xl font-bold mb-4">Cash Payment Details</h2>
+              
+              {/* Customer Info (Optional) */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Customer Name (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter customer name"
+                  className="border border-gray-300 p-3 w-full rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                />
+              </div>
 
-            <Image
-              src="/esewa-live.png"
-              alt="eSewa Logo"
-              width={80}
-              height={80}
-              className="mx-auto mb-4"
-            />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Phone Number (Optional)
+                </label>
+                <input
+                  type="tel"
+                  placeholder="Enter phone number"
+                  className="border border-gray-300 p-3 w-full rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value)}
+                />
+              </div>
 
-            <h3 className="text-xl font-semibold mb-1">
-              Pay with eSewa
-            </h3>
+              {/* Cash Amount */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Cash Amount Received *
+                </label>
+                <input
+                  type="number"
+                  placeholder={`Enter amount (Min: Rs. ${grandTotal.toFixed(2)})`}
+                  className="border border-gray-300 p-3 w-full rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  value={cashAmount}
+                  onChange={(e) => setCashAmount(e.target.value)}
+                  min={grandTotal}
+                  step="0.01"
+                />
+              </div>
 
-            <p className="text-gray-500 mb-4">
-              You will be redirected to eSewa to complete the payment
-            </p>
+              {/* Change Display */}
+              {cashAmount && parseFloat(cashAmount) >= grandTotal && (
+                <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
+                  <p className="text-green-800 font-semibold">
+                    Change to Return: Rs. {calculateChange().toFixed(2)}
+                  </p>
+                </div>
+              )}
 
-            <form
-              action="https://rc-epay.esewa.com.np/api/epay/main/v2/form"
-              method="POST"
-              className="w-full max-w-sm space-y-3"
-            >
-              <input type="hidden" name="amount" value={totalNPR.toFixed(2)} />
-              <input type="hidden" name="tax_amount" value={vat.toFixed(2)} />
-              <input type="hidden" name="total_amount" value={grandTotal.toFixed(2)} />
-
-              <input type="hidden" name="product_code" value="EPAYTEST" />
-          
-
-              {/* For testing, signature can be skipped. Production: generate server-side */}
-              {/* <input type="hidden" name="signed_field_names" value="total_amount,transaction_uuid,product_code" />
-              <input type="hidden" name="signature" value={signature} /> */}
-
-              <input type="hidden" name="success_url" value="http://localhost:3000/esewa-success" />
-              <input type="hidden" name="failure_url" value="http://localhost:3000/esewa-failure" />
-
-              <button
-                type="submit"
-                className="mt-4 w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-semibold"
-              >
-                Pay via eSewa
-              </button>
-            </form>
-
-          </div>
-        )}
-
+              {/* Action Buttons */}
+              <div className="flex gap-4 mt-6">
+                <button
+                  onClick={() => setPaymentMethod(null)}
+                  className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-3 rounded-xl font-semibold transition"
+                >
+                  Back
+                </button>
+                <button
+                  onClick={handleCashPayment}
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-semibold transition"
+                >
+                  Complete Payment
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
-import Footer from "@/components/Footer";
+
 // Initialize Supabase
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -12,7 +12,10 @@ const supabase = createClient(
 export default function Inventory() {
   const [inventory, setInventory] = useState([]);
   const [showModal, setShowModal] = useState(false);
+  const [showRestockModal, setShowRestockModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [restockingItem, setRestockingItem] = useState(null);
+  const [restockQuantity, setRestockQuantity] = useState("");
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
   const [formData, setFormData] = useState({
@@ -22,7 +25,7 @@ export default function Inventory() {
     price: "",
     category: "women",
     photoUrl: "",
-    availableIn: ["online", "instore"], // New field
+    availableIn: ["instore"],
   });
 
   // Fetch inventory from Supabase
@@ -62,6 +65,7 @@ export default function Inventory() {
   };
 
   const calculateStockStatus = (quantity) => {
+    if (quantity <= 0) return "Out of Stock";
     if (quantity <= 5) return "Low";
     if (quantity <= 15) return "Medium";
     return "In Stock";
@@ -128,12 +132,51 @@ export default function Inventory() {
         price: "",
         category: "women",
         photoUrl: "",
-        availableIn: ["online", "instore"],
+        availableIn: ["instore"],
       });
       setShowModal(false);
       fetchInventory();
     } catch (error) {
       alert("Error saving item: " + error.message);
+    }
+  };
+
+  const handleRestockItem = (item) => {
+    setRestockingItem(item);
+    setRestockQuantity("");
+    setShowRestockModal(true);
+  };
+
+  const handleRestockSubmit = async () => {
+    if (!restockQuantity || parseInt(restockQuantity) <= 0) {
+      alert("Please enter a valid quantity to add");
+      return;
+    }
+
+    try {
+      const newQuantity = restockingItem.quantity + parseInt(restockQuantity);
+      const newStockStatus = calculateStockStatus(newQuantity);
+
+      const { error } = await supabase
+        .from("inventory")
+        .update({
+          quantity: newQuantity,
+          stock_status: newStockStatus,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", restockingItem.id);
+
+      if (error) throw error;
+
+      alert(
+        `Successfully added ${restockQuantity} units to "${restockingItem.title}"!\nNew stock: ${newQuantity}`
+      );
+      setShowRestockModal(false);
+      setRestockingItem(null);
+      setRestockQuantity("");
+      fetchInventory();
+    } catch (error) {
+      alert("Error restocking item: " + error.message);
     }
   };
 
@@ -145,7 +188,7 @@ export default function Inventory() {
       price: item.price.toString(),
       category: item.category,
       photoUrl: item.photo_url,
-      availableIn: item.available_in || ["online", "instore"],
+      availableIn: item.available_in || ["instore"],
     });
     setEditingId(item.id);
     setShowModal(true);
@@ -178,13 +221,16 @@ export default function Inventory() {
       price: "",
       category: "women",
       photoUrl: "",
-      availableIn: ["online", "instore"],
+      availableIn: ["instore"],
     });
   };
 
   const getFilteredInventory = () => {
     if (activeTab === "all") return inventory;
-    if (activeTab === "low") return inventory.filter((item) => item.stock_status === "Low");
+    if (activeTab === "out-of-stock")
+      return inventory.filter((item) => item.quantity <= 0);
+    if (activeTab === "low")
+      return inventory.filter((item) => item.stock_status === "Low");
     if (activeTab === "medium")
       return inventory.filter((item) => item.stock_status === "Medium");
     if (activeTab === "in-stock")
@@ -195,6 +241,7 @@ export default function Inventory() {
   const filteredItems = getFilteredInventory();
 
   const getStockColor = (stock) => {
+    if (stock === "Out of Stock") return "bg-gray-100 text-gray-800";
     if (stock === "Low") return "bg-red-100 text-red-800";
     if (stock === "Medium") return "bg-yellow-100 text-yellow-800";
     return "bg-green-100 text-green-800";
@@ -222,6 +269,7 @@ export default function Inventory() {
           <div className="flex gap-3 mt-6 flex-wrap">
             {[
               { id: "all", label: "All Items" },
+              { id: "out-of-stock", label: "❌ Out of Stock" },
               { id: "low", label: "⚠️ Low Stock" },
               { id: "medium", label: "🟡 Medium Stock" },
               { id: "in-stock", label: "🟢 In Stock" },
@@ -270,12 +318,19 @@ export default function Inventory() {
                 className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition"
               >
                 {/* Image */}
-                <div className="h-48 bg-gray-100 overflow-hidden">
+                <div className="h-48 bg-gray-100 overflow-hidden relative">
                   <img
                     src={item.photo_url || "/placeholder.jpg"}
                     alt={item.title}
                     className="w-full h-full object-cover"
                   />
+                  {item.quantity <= 0 && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <span className="text-white text-lg font-bold">
+                        OUT OF STOCK
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Details */}
@@ -286,10 +341,10 @@ export default function Inventory() {
                     </h3>
                     <span
                       className={`text-xs px-3 py-1 rounded-full font-medium ${getStockColor(
-                        item.stock_status
+                        calculateStockStatus(item.quantity)
                       )}`}
                     >
-                      {item.stock_status}
+                      {calculateStockStatus(item.quantity)}
                     </span>
                   </div>
 
@@ -300,7 +355,13 @@ export default function Inventory() {
                   <div className="space-y-2 text-sm mb-4">
                     <div className="flex justify-between">
                       <span className="text-gray-500">Quantity:</span>
-                      <span className="font-semibold">{item.quantity}</span>
+                      <span
+                        className={`font-semibold ${
+                          item.quantity <= 0 ? "text-red-600" : ""
+                        }`}
+                      >
+                        {item.quantity}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-500">Price:</span>
@@ -329,6 +390,13 @@ export default function Inventory() {
                   {/* Action Buttons */}
                   <div className="flex gap-2 pt-4 border-t">
                     <button
+                      onClick={() => handleRestockItem(item)}
+                      className="flex-1 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg font-medium transition-colors"
+                      title="Add more stock"
+                    >
+                      + Restock
+                    </button>
+                    <button
                       onClick={() => handleEditItem(item)}
                       className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg font-medium transition-colors"
                     >
@@ -348,7 +416,7 @@ export default function Inventory() {
         )}
       </div>
 
-      {/* MODAL */}
+      {/* ADD/EDIT MODAL */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -510,8 +578,73 @@ export default function Inventory() {
         </div>
       )}
 
-      {/* FOOTER */}
-            <Footer />
+      {/* RESTOCK MODAL */}
+      {showRestockModal && restockingItem && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full">
+            <div className="bg-green-600 text-white p-6">
+              <h2 className="text-2xl font-bold">Restock Item</h2>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <p className="text-sm text-gray-600">Product</p>
+                <p className="text-lg font-semibold">{restockingItem.title}</p>
+              </div>
+
+              <div>
+                <p className="text-sm text-gray-600">Current Stock</p>
+                <p className="text-lg font-semibold">
+                  {restockingItem.quantity} units
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Add Quantity *
+                </label>
+                <input
+                  type="number"
+                  value={restockQuantity}
+                  onChange={(e) => setRestockQuantity(e.target.value)}
+                  placeholder="Enter quantity to add"
+                  min="1"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                />
+              </div>
+
+              {restockQuantity && (
+                <div className="bg-green-50 p-3 rounded-lg">
+                  <p className="text-sm text-gray-600">New Stock Will Be:</p>
+                  <p className="text-xl font-bold text-green-600">
+                    {restockingItem.quantity + parseInt(restockQuantity || 0)}{" "}
+                    units
+                  </p>
+                </div>
+              )}
+
+              <div className="flex gap-4 pt-4 border-t">
+                <button
+                  onClick={() => {
+                    setShowRestockModal(false);
+                    setRestockingItem(null);
+                    setRestockQuantity("");
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleRestockSubmit}
+                  className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
+                >
+                  Add Stock
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
