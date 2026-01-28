@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Babita Clothing Store",
+  title: "Mandira Fancy Store",
   description: "Your favorite clothing store online and in-store",
 };
 

@@ -522,15 +522,8 @@ export default function Inventory() {
                   Available In *
                 </label>
                 <div className="flex gap-4">
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={formData.availableIn.includes("online")}
-                      onChange={() => handleAvailabilityChange("online")}
-                      className="mr-2"
-                    />
-                    Online Store
-                  </label>
+                 
+                    
                   <label className="flex items-center">
                     <input
                       type="checkbox"
