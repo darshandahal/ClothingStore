@@ -53,7 +53,7 @@ export default function MarketingPage() {
                 textShadow: "2px 2px 4px rgba(0, 0, 0, 0.9)",
               }}
             >
-              मन्दिरा फेन्सी स्टोर ट्रेंडी, सस्तो, र उच्च-गुणस्तरको फेसनका लागि तपाईँको एक-स्थान गन्तव्य हो। हामी तपाईँका लागि पुरुष, महिला, र बालबालिकाका लागि नवीनतम शैलीहरू ल्याउँछौँ — ती सबै माया र विस्तृत ध्यानका साथ बनाइएका छन्।
+              For all the elegant women out there,  where timeless beauty, delicate details, and refined style come together to celebrate your unique grace.
             </p>
 
             {/* Get Started Button */}

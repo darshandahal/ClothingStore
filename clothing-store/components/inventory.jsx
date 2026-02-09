@@ -253,7 +253,7 @@ export default function Inventory() {
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold">Inventory Management (Main)</h1>
+            <h1 className="text-3xl font-bold">Inventory Management </h1>
             <button
               onClick={() => {
                 closeModal();
